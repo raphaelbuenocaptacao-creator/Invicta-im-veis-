@@ -46,5 +46,7 @@ leadForm.addEventListener('submit',e=>{e.preventDefault();const data=new FormDat
 let deferredPrompt;const installBtn=document.getElementById('installBtn');
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.hidden=false});
 installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.hidden=true});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+window.addEventListener('appinstalled',()=>{deferredPrompt=null;installBtn.hidden=true});
+const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(standalone)installBtn.hidden=true;
+if('serviceWorker' in navigator&&window.isSecureContext){window.addEventListener('load',async()=>{try{const registration=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await registration.update();}catch{}});}
 render(properties);
