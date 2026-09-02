@@ -48,5 +48,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPro
 installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.hidden=true});
 window.addEventListener('appinstalled',()=>{deferredPrompt=null;installBtn.hidden=true});
 const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(standalone)installBtn.hidden=true;
-if('serviceWorker' in navigator&&window.isSecureContext){window.addEventListener('load',async()=>{try{const registration=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await registration.update();}catch{}});}
+let swRegistration=null;
+async function refreshServiceWorker(){try{await swRegistration?.update();}catch{}}
+if('serviceWorker' in navigator&&window.isSecureContext){window.addEventListener('load',async()=>{try{swRegistration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});await refreshServiceWorker();}catch{}});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshServiceWorker();});window.addEventListener('online',refreshServiceWorker);}
 render(properties);
