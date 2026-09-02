@@ -1,10 +1,10 @@
-const CACHE='invicta-v3-safe-shell';
+const CACHE='invicta-v4-safe-shell';
 const CACHE_PREFIX='invicta-';
 const SHELL=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./assets/logo.svg','./assets/icon-192.svg','./assets/icon-512.svg','./assets/icon-maskable.svg'];
 const PRIVATE_PATH=/(?:\/api\/|\/auth\/|\/login(?:\/|$)|\/logout(?:\/|$)|\/session(?:\/|$)|\/account(?:\/|$)|\/profile(?:\/|$))/i;
 const SENSITIVE_PARAM=/(token|access_token|refresh_token|password|passwd|session|credential|api[_-]?key|secret|code)/i;
 function isSensitive(req){const url=new URL(req.url);if(req.method!=='GET'||req.headers.has('authorization')||req.headers.has('cookie')||PRIVATE_PATH.test(url.pathname))return true;for(const [k] of url.searchParams){if(SENSITIVE_PARAM.test(k))return true;}return false;}
-function cacheableResponse(res){if(!res||!res.ok||res.type==='opaque')return false;const cc=(res.headers.get('cache-control')||'').toLowerCase();return !cc.includes('private')&&!cc.includes('no-store')&&!res.headers.has('set-cookie');}
+function cacheableResponse(res){if(!res||!res.ok||res.status===206||res.type==='opaque')return false;const cc=(res.headers.get('cache-control')||'').toLowerCase();return !cc.includes('private')&&!cc.includes('no-store')&&!res.headers.has('set-cookie');}
 async function safePrecache(){const cache=await caches.open(CACHE);await Promise.all(SHELL.map(async path=>{try{const req=new Request(path,{credentials:'omit',cache:'reload'});const res=await fetch(req);if(cacheableResponse(res))await cache.put(req,res.clone());}catch{}}));}
 self.addEventListener('install',event=>{event.waitUntil(safePrecache());self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{for(const key of await caches.keys()){if(key.startsWith(CACHE_PREFIX)&&key!==CACHE)await caches.delete(key);}await self.clients.claim();})());});
