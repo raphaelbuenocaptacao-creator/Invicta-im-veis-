@@ -1,10 +1,10 @@
-const CACHE='invicta-v7-scope-safe-shell';
+const CACHE='invicta-v8-vary-range-safe-shell';
 const CACHE_PREFIX='invicta-';
 const SHELL=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./assets/logo.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png'];
 const PRIVATE_PATH=/(?:\/api\/|\/auth\/|\/login(?:\/|$)|\/logout(?:\/|$)|\/session(?:\/|$)|\/account(?:\/|$)|\/profile(?:\/|$))/i;
 const SENSITIVE_PARAM=/(token|access_token|refresh_token|password|passwd|session|credential|api[_-]?key|secret|code)/i;
 function isSensitive(req){const url=new URL(req.url);if(req.method!=='GET'||req.headers.has('authorization')||req.headers.has('cookie')||req.headers.has('range')||req.headers.has('if-range')||PRIVATE_PATH.test(url.pathname))return true;for(const [k] of url.searchParams){if(SENSITIVE_PARAM.test(k))return true;}return false;}
-function cacheableResponse(res){if(!res||!res.ok||res.status===206||res.type==='opaque'||res.redirected||res.headers.has('content-range'))return false;const cc=(res.headers.get('cache-control')||'').toLowerCase();const vary=(res.headers.get('vary')||'').toLowerCase();if(cc.includes('private')||cc.includes('no-store')||res.headers.has('set-cookie'))return false;if(vary.includes('cookie')||vary.includes('authorization'))return false;return true;}
+function cacheableResponse(res){if(!res||!res.ok||res.status===206||res.type==='opaque'||res.redirected||res.headers.has('content-range'))return false;const cc=(res.headers.get('cache-control')||'').toLowerCase();const vary=(res.headers.get('vary')||'').toLowerCase();if(cc.includes('private')||cc.includes('no-store')||res.headers.has('set-cookie'))return false;if(vary.includes('*')||vary.includes('cookie')||vary.includes('authorization')||vary.includes('range')||vary.includes('if-range'))return false;return true;}
 function shellUrl(path){return new URL(path,self.registration.scope).href;}
 function isShellRequest(req){const href=new URL(req.url).href;return SHELL.some(path=>shellUrl(path)===href);}
 async function safePrecache(){const cache=await caches.open(CACHE);await Promise.all(SHELL.map(async path=>{try{const req=new Request(shellUrl(path),{credentials:'omit',cache:'reload',redirect:'error'});const res=await fetch(req);if(cacheableResponse(res))await cache.put(req,res.clone());}catch{}}));}
