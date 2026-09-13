@@ -1,0 +1,75 @@
+name: Invicta PWA Audit
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PWA contract
+        shell: python
+        run: |
+          import json, re, struct
+          from pathlib import Path
+
+          manifest = json.loads(Path('manifest.webmanifest').read_text(encoding='utf-8'))
+          assert manifest.get('name') and manifest.get('short_name')
+          assert manifest.get('start_url') == './'
+          assert manifest.get('scope') == './'
+          assert manifest.get('display') == 'standalone'
+          assert manifest.get('theme_color') and manifest.get('background_color')
+
+          icons = {i['src']: i for i in manifest.get('icons', [])}
+          required = {
+              'assets/icon-192.png': ('192x192', 192, 192),
+              'assets/icon-512.png': ('512x512', 512, 512),
+              'assets/icon-maskable-512.png': ('512x512', 512, 512),
+          }
+          for src, (sizes, width, height) in required.items():
+              assert src in icons, f'missing icon in manifest: {src}'
+              assert icons[src].get('sizes') == sizes
+              data = Path(src).read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n', f'{src} is not PNG'
+              w, h = struct.unpack('>II', data[16:24])
+              assert (w, h) == (width, height), f'{src} is {w}x{h}'
+          assert 'maskable' in icons['assets/icon-maskable-512.png'].get('purpose', '')
+
+          html = Path('index.html').read_text(encoding='utf-8')
+          assert 'rel="manifest"' in html
+          assert 'name="theme-color"' in html
+          assert 'name="viewport"' in html
+          assert 'apple-mobile-web-app-capable' in html
+          assert 'id="installBtn"' in html
+
+          sw = Path('sw.js').read_text(encoding='utf-8')
+          app = Path('app.js').read_text(encoding='utf-8')
+          m = re.search(r"const CACHE='([^']+)'", sw)
+          assert m, 'service worker cache version missing'
+          version = m.group(1)
+          assert f"./sw.js?v={version}" in app, 'registered SW URL must carry exact cache version'
+          assert "updateViaCache:'none'" in app
+          assert 'beforeinstallprompt' in app and 'appinstalled' in app
+
+          required_sw = [
+              "headers.has('authorization')", "headers.has('cookie')",
+              "headers.has('range')", "headers.has('if-range')",
+              "status===206", "headers.has('content-range')",
+              "cc.includes('private')", "cc.includes('no-store')",
+              "headers.has('set-cookie')", "vary.includes('*')",
+              "vary.includes('cookie')", "vary.includes('authorization')",
+              "vary.includes('range')", "vary.includes('if-range')",
+              "key.startsWith(CACHE_PREFIX)&&key!==CACHE",
+          ]
+          for needle in required_sw:
+              assert needle in sw, f'missing SW safety guard: {needle}'
+
+          assert "req.mode==='navigate'" in sw
+          assert "cache:'no-store'" in sw
+          print(f'Invicta PWA contract OK for {version}')
