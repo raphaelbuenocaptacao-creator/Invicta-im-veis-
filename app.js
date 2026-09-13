@@ -50,5 +50,5 @@ window.addEventListener('appinstalled',()=>{deferredPrompt=null;installBtn.hidde
 const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(standalone)installBtn.hidden=true;
 let swRegistration=null;
 async function refreshServiceWorker(){try{await swRegistration?.update();}catch{}}
-if('serviceWorker' in navigator&&window.isSecureContext){window.addEventListener('load',async()=>{try{swRegistration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});await refreshServiceWorker();}catch{}});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshServiceWorker();});window.addEventListener('online',refreshServiceWorker);}
+if('serviceWorker' in navigator&&window.isSecureContext){window.addEventListener('load',async()=>{try{swRegistration=await navigator.serviceWorker.register('./sw.js?v=invicta-v8-vary-range-safe-shell',{scope:'./',updateViaCache:'none'});await refreshServiceWorker();}catch{}});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshServiceWorker();});window.addEventListener('online',refreshServiceWorker);}
 render(properties);
