@@ -1,4 +1,4 @@
-const CACHE='invicta-v8-vary-range-safe-shell';
+const CACHE='invicta-v9-vary-range-safe-shell';
 const CACHE_PREFIX='invicta-';
 const SHELL=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./assets/logo.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png'];
 const PRIVATE_PATH=/(?:\/api\/|\/auth\/|\/login(?:\/|$)|\/logout(?:\/|$)|\/session(?:\/|$)|\/account(?:\/|$)|\/profile(?:\/|$))/i;
