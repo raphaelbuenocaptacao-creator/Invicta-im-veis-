@@ -56,6 +56,11 @@ jobs:
           assert f"./sw.js?v={version}" in app, 'registered SW URL must carry exact cache version'
           assert "updateViaCache:'none'" in app
           assert 'beforeinstallprompt' in app and 'appinstalled' in app
+          assert "document.addEventListener('visibilitychange'" in app, 'PWA must check updates when returning to foreground'
+          assert "window.addEventListener('online'" in app, 'PWA must retry update after connectivity returns'
+          assert "navigator.serviceWorker.addEventListener('controllerchange'" in app, 'PWA must hand off to a newly activated service worker'
+          assert 'hadController' in app, 'controller handoff must distinguish first install from an update'
+          assert 'reloadingForUpdate' in app, 'controller handoff must guard against reload loops'
 
           required_sw = [
               "headers.has('authorization')", "headers.has('cookie')",
